@@ -53,8 +53,7 @@ cosyvoice = CosyVoice2(
     model_dir=model_dir, 
     load_jit=False, 
     load_trt=False, 
-    fp16=False, 
-    use_flow_cache=False
+    fp16=False
 )
 
 # 加载音色
