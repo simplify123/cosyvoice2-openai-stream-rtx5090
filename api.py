@@ -1,4 +1,4 @@
-# 支持流式推理(非标准openai)
+
 # 支持非流式推理(标准OPENAI)
 import io
 import time
