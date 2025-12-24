@@ -128,21 +128,77 @@ class ConditionalCFM(BASECFM):
             return self.estimator(x, mask, mu, t, spks, cond, streaming=streaming)
         else:
             estimator, trt_engine = self.estimator.acquire_estimator()
-            estimator.set_input_shape('x', (2, 80, x.size(2)))
-            estimator.set_input_shape('mask', (2, 1, x.size(2)))
-            estimator.set_input_shape('mu', (2, 80, x.size(2)))
+            seq_len = x.size(2)
+            
+            # Set shapes for main input tensors
+            estimator.set_input_shape('x', (2, 80, seq_len))
+            estimator.set_input_shape('mask', (2, 1, seq_len))
+            estimator.set_input_shape('mu', (2, 80, seq_len))
             estimator.set_input_shape('t', (2,))
             estimator.set_input_shape('spks', (2, 80))
-            estimator.set_input_shape('cond', (2, 80, x.size(2)))
-            data_ptrs = [x.contiguous().data_ptr(),
-                         mask.contiguous().data_ptr(),
-                         mu.contiguous().data_ptr(),
-                         t.contiguous().data_ptr(),
-                         spks.contiguous().data_ptr(),
-                         cond.contiguous().data_ptr(),
-                         x.data_ptr()]
+            estimator.set_input_shape('cond', (2, 80, seq_len))
+            
+            # Create Conv cache tensors (zero-initialized, fixed shapes)
+            down_blocks_conv_cache = torch.zeros(1, 2, 832, 2, device=x.device, dtype=x.dtype)
+            mid_blocks_conv_cache = torch.zeros(12, 2, 512, 2, device=x.device, dtype=x.dtype)
+            up_blocks_conv_cache = torch.zeros(1, 2, 1024, 2, device=x.device, dtype=x.dtype)
+            final_blocks_conv_cache = torch.zeros(2, 256, 2, device=x.device, dtype=x.dtype)
+            
+            estimator.set_input_shape('down_blocks_conv_cache', (1, 2, 832, 2))
+            estimator.set_input_shape('mid_blocks_conv_cache', (12, 2, 512, 2))
+            estimator.set_input_shape('up_blocks_conv_cache', (1, 2, 1024, 2))
+            estimator.set_input_shape('final_blocks_conv_cache', (2, 256, 2))
+            
+            # Create KV cache tensors (zero-initialized with dynamic cache_in_len)
+            down_blocks_kv_cache = torch.zeros(1, 4, 2, seq_len, 512, 2, device=x.device, dtype=x.dtype)
+            mid_blocks_kv_cache = torch.zeros(12, 4, 2, seq_len, 512, 2, device=x.device, dtype=x.dtype)
+            up_blocks_kv_cache = torch.zeros(1, 4, 2, seq_len, 512, 2, device=x.device, dtype=x.dtype)
+            
+            estimator.set_input_shape('down_blocks_kv_cache', (1, 4, 2, seq_len, 512, 2))
+            estimator.set_input_shape('mid_blocks_kv_cache', (12, 4, 2, seq_len, 512, 2))
+            estimator.set_input_shape('up_blocks_kv_cache', (1, 4, 2, seq_len, 512, 2))
+            
+            # Allocate output buffers (matching the ONNX output shapes)
+            estimator_out = x  # Reuse input buffer for main output
+            down_blocks_conv_cache_out = torch.zeros(1, 2, 832, 2, device=x.device, dtype=x.dtype)
+            down_blocks_kv_cache_out = torch.zeros(1, 4, 2, seq_len, 512, 2, device=x.device, dtype=x.dtype)
+            mid_blocks_conv_cache_out = torch.zeros(12, 2, 512, 2, device=x.device, dtype=x.dtype)
+            mid_blocks_kv_cache_out = torch.zeros(12, 4, 2, seq_len, 512, 2, device=x.device, dtype=x.dtype)
+            up_blocks_conv_cache_out = torch.zeros(1, 2, 1024, 2, device=x.device, dtype=x.dtype)
+            up_blocks_kv_cache_out = torch.zeros(1, 4, 2, seq_len, 512, 2, device=x.device, dtype=x.dtype)
+            final_blocks_conv_cache_out = torch.zeros(2, 256, 2, device=x.device, dtype=x.dtype)
+            
+            # Prepare data pointers for all 13 inputs + 8 outputs
+            # Order must match ONNX input/output order
+            data_ptrs = [
+                # 13 inputs
+                x.contiguous().data_ptr(),
+                mask.contiguous().data_ptr(),
+                mu.contiguous().data_ptr(),
+                t.contiguous().data_ptr(),
+                spks.contiguous().data_ptr(),
+                cond.contiguous().data_ptr(),
+                down_blocks_conv_cache.contiguous().data_ptr(),
+                down_blocks_kv_cache.contiguous().data_ptr(),
+                mid_blocks_conv_cache.contiguous().data_ptr(),
+                mid_blocks_kv_cache.contiguous().data_ptr(),
+                up_blocks_conv_cache.contiguous().data_ptr(),
+                up_blocks_kv_cache.contiguous().data_ptr(),
+                final_blocks_conv_cache.contiguous().data_ptr(),
+                # 8 outputs
+                estimator_out.data_ptr(),
+                down_blocks_conv_cache_out.contiguous().data_ptr(),
+                down_blocks_kv_cache_out.contiguous().data_ptr(),
+                mid_blocks_conv_cache_out.contiguous().data_ptr(),
+                mid_blocks_kv_cache_out.contiguous().data_ptr(),
+                up_blocks_conv_cache_out.contiguous().data_ptr(),
+                up_blocks_kv_cache_out.contiguous().data_ptr(),
+                final_blocks_conv_cache_out.contiguous().data_ptr(),
+            ]
+            
             for i, j in enumerate(data_ptrs):
                 estimator.set_tensor_address(trt_engine.get_tensor_name(i), j)
+            
             # run trt engine
             assert estimator.execute_async_v3(torch.cuda.current_stream().cuda_stream) is True
             torch.cuda.current_stream().synchronize()

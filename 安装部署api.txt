@@ -1,0 +1,49 @@
+# https://www.bilibili.com/video/BV1bejzznEXq
+# https://github.com/daxiang027/CosyVoice
+
+
+conda env list
+conda remove --name cosyvoice --all
+
+
+conda create -n cosyvoice-daxiang027 python=3.10
+conda activate cosyvoice-daxiang027
+
+安装requirements.txt时会报错，手动安装下面几个
+conda install -c conda-forge pynini==2.1.5
+pip install mkl-2021.4.0-py2.py3-none-win_amd64.whl
+pip install numpy==1.26.4 -i https://pypi.tuna.tsinghua.edu.cn/simple
+pip install openai
+
+pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --trusted-host pypi.tuna.tsinghua.edu.cn -r requirements.txt
+
+
+(cosyvoice-daxiang027) D:\gitcode\cosyvoice-daxiang027>python api.py
+
+
+# 这个项目可以被sap数字人完美使用，但是不支持流式合成
+
+
+
+cd /d D:\gitcode\cosyvoice-daxiang027
+
+conda activate cosyvoice-daxiang027
+
+python api.py
+
+python openai_client_test.py
+
+构建镜像  docker build -f Dockerfile.optimized -t cosyvoice2-openai-api-stream-jit-trt:latest .
+docker build -t cosyvoice-daxiang027-add-stream:latest .
+docker build -t cosyvoice-daxiang027-add-stream:latest -f Dockerfile .
+docker build --no-cache -t cosyvoice-daxiang027-add-stream:latest -f Dockerfile .
+
+# 查看详细的构建进度
+docker build --progress=plain -t cosyvoice-daxiang027-add-stream:latest -f Dockerfile .
+
+cosyvoice-daxiang027-add-stream:latest
+cosyvoice-openai-api-altpano:gpu
+
+
+cd /vol2/1000/file
+docker save -o cosyvoice-daxiang027-add-stream.tar cosyvoice-daxiang027-add-stream:latest

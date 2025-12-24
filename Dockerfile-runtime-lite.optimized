@@ -1,0 +1,118 @@
+# ============================================
+# Stage 1: Builder - 用于编译和安装依赖
+# ============================================
+FROM nvidia/cuda:12.9.0-cudnn-devel-ubuntu22.04 AS builder
+
+ARG VENV="cosyvoice"
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
+ENV DEBIAN_FRONTEND=noninteractive
+SHELL ["/bin/bash", "-c"]
+
+# 换 apt 源（阿里云）并安装构建依赖
+RUN sed -i 's@http://.*.ubuntu.com@http://mirrors.aliyun.com@g' /etc/apt/sources.list && \
+    apt-get update -y && \
+    apt-get install -y --no-install-recommends \
+    git \
+    build-essential \
+    wget \
+    ffmpeg \
+    unzip \
+    git-lfs \
+    sox \
+    libsox-dev && \
+    git lfs install && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Miniforge
+COPY docker/Miniforge3-Linux-x86_64.sh /tmp/miniforge.sh
+RUN bash /tmp/miniforge.sh -b -p /opt/conda && rm /tmp/miniforge.sh
+ENV PATH=/opt/conda/bin:$PATH
+
+# 换 conda 源（清华源）
+RUN conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main/ && \
+    conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/ && \
+    conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/conda-forge/ && \
+    conda config --set show_channel_urls yes && \
+    conda config --set channel_priority strict
+
+# 创建虚拟环境
+RUN conda create -y -n ${VENV} python=3.10
+ENV PATH=/opt/conda/envs/${VENV}/bin:$PATH
+ENV CONDA_DEFAULT_ENV=${VENV}
+
+# 复制源码和依赖文件
+COPY requirements.txt /tmp/requirements.txt
+COPY whl/torch-2.8.0+cu129-cp310-cp310-manylinux_2_28_x86_64.whl /tmp/
+COPY whl/torchaudio-2.8.0+cu129-cp310-cp310-manylinux_2_28_x86_64.whl /tmp/
+COPY whl/torch_tensorrt-2.8.0+cu129-cp310-cp310-manylinux_2_28_x86_64.whl /tmp/
+
+# 换 pip 源并安装 PyTorch 相关包（包含 TensorRT 支持）
+RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/ && \
+    pip install --no-cache-dir \
+    /tmp/torch-2.8.0+cu129-cp310-cp310-manylinux_2_28_x86_64.whl \
+    /tmp/torchaudio-2.8.0+cu129-cp310-cp310-manylinux_2_28_x86_64.whl \
+    /tmp/torch_tensorrt-2.8.0+cu129-cp310-cp310-manylinux_2_28_x86_64.whl
+
+# 安装 pynini 和其他依赖
+RUN conda install -y -n ${VENV} -c conda-forge pynini==2.1.5 && \
+    pip install --no-cache-dir -r /tmp/requirements.txt && \
+    conda clean -afy && \
+    pip cache purge
+
+# 复制完整源码用于安装 ttsfrd
+COPY . /workspace/CosyVoice
+
+# 安装 ttsfrd 并解压资源
+RUN pip install --no-cache-dir \
+    /workspace/CosyVoice/pretrained_models/CosyVoice-ttsfrd/ttsfrd_dependency-0.1-py3-none-any.whl \
+    /workspace/CosyVoice/pretrained_models/CosyVoice-ttsfrd/ttsfrd-0.4.2-cp310-cp310-linux_x86_64.whl && \
+    cd /workspace/CosyVoice/pretrained_models/CosyVoice-ttsfrd && \
+    unzip -o resource.zip && \
+    rm -f resource.zip && \
+    pip cache purge
+
+# 清理不必要的文件
+RUN find /workspace/CosyVoice -type f -name "*.pyc" -delete && \
+    find /workspace/CosyVoice -type d -name "__pycache__" -delete && \
+    find /workspace/CosyVoice -type d -name ".git" -exec rm -rf {} + || true && \
+    rm -rf /tmp/* /var/tmp/*
+
+
+# ============================================
+# Stage 2: Runtime - 最终运行时镜像
+# ============================================
+FROM nvidia/cuda:12.9.0-cudnn-runtime-ubuntu22.04
+
+ARG VENV="cosyvoice"
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+SHELL ["/bin/bash", "-c"]
+
+# 安装运行时依赖（只保留运行时必需的）
+RUN sed -i 's@http://.*.ubuntu.com@http://mirrors.aliyun.com@g' /etc/apt/sources.list && \
+    apt-get update -y && \
+    apt-get install -y --no-install-recommends \
+    ffmpeg \
+    sox \
+    libsox3 && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# 兼容 ONNXRuntime 对 libcudnn.so.8 的硬编码
+RUN ln -s /usr/lib/x86_64-linux-gnu/libcudnn.so.9 \
+    /usr/lib/x86_64-linux-gnu/libcudnn.so.8 && \
+    ldconfig
+
+# 从 builder 阶段复制 conda 环境和应用代码
+COPY --from=builder /opt/conda /opt/conda
+COPY --from=builder /workspace/CosyVoice /workspace/CosyVoice
+
+ENV PATH=/opt/conda/envs/${VENV}/bin:$PATH
+ENV CONDA_DEFAULT_ENV=${VENV}
+ENV PYTHONPATH=/workspace/CosyVoice:/workspace/CosyVoice/third_party/Matcha-TTS
+
+WORKDIR /workspace/CosyVoice
+
+CMD ["python3", "api.py"]

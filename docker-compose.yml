@@ -1,0 +1,21 @@
+services:
+  cosyvoice:
+    image: cosyvoice2-openai-api-stream-simplify123:latest
+    container_name: cosyvoice2-openai-api-stream-simplify123
+    restart: always
+    ports:
+      - "51870:51870"
+    environment:
+      - LOAD_JIT=True
+      - LOAD_TRT=True
+      - FP16=False # 推荐设置为 True 以获得更好性能，但需先确保支持
+    volumes:
+      - ./pretrained_models:/workspace/CosyVoice/pretrained_models
+      - ./voices:/workspace/CosyVoice/voices
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]

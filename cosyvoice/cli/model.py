@@ -101,10 +101,56 @@ class CosyVoiceModel:
         self.flow.decoder.estimator = TrtContextWrapper(estimator_engine, trt_concurrent=self.trt_concurrent)
 
     def get_trt_kwargs(self):
-        min_shape = [(2, 80, 4), (2, 1, 4), (2, 80, 4), (2, 80, 4)]
-        opt_shape = [(2, 80, 500), (2, 1, 500), (2, 80, 500), (2, 80, 500)]
-        max_shape = [(2, 80, 3000), (2, 1, 3000), (2, 80, 3000), (2, 80, 3000)]
-        input_names = ["x", "mask", "mu", "cond"]
+        # Main input tensors (dynamic seq_len dimension)
+        min_shape = [(2, 80, 4), (2, 1, 4), (2, 80, 4), (2,), (2, 80), (2, 80, 4)]
+        opt_shape = [(2, 80, 500), (2, 1, 500), (2, 80, 500), (2,), (2, 80), (2, 80, 500)]
+        max_shape = [(2, 80, 3000), (2, 1, 3000), (2, 80, 3000), (2,), (2, 80), (2, 80, 3000)]
+        input_names = ["x", "mask", "mu", "t", "spks", "cond"]
+        
+        # Conv cache tensors (fixed shapes, no dynamic dimension)
+        # down_blocks_conv_cache: [1, 2, 832, 2]
+        min_shape.append((1, 2, 832, 2))
+        opt_shape.append((1, 2, 832, 2))
+        max_shape.append((1, 2, 832, 2))
+        input_names.append("down_blocks_conv_cache")
+        
+        # mid_blocks_conv_cache: [12, 2, 512, 2]
+        min_shape.append((12, 2, 512, 2))
+        opt_shape.append((12, 2, 512, 2))
+        max_shape.append((12, 2, 512, 2))
+        input_names.append("mid_blocks_conv_cache")
+        
+        # up_blocks_conv_cache: [1, 2, 1024, 2]
+        min_shape.append((1, 2, 1024, 2))
+        opt_shape.append((1, 2, 1024, 2))
+        max_shape.append((1, 2, 1024, 2))
+        input_names.append("up_blocks_conv_cache")
+        
+        # final_blocks_conv_cache: [2, 256, 2]
+        min_shape.append((2, 256, 2))
+        opt_shape.append((2, 256, 2))
+        max_shape.append((2, 256, 2))
+        input_names.append("final_blocks_conv_cache")
+        
+        # KV cache tensors (dynamic cache_in_len dimension)
+        # down_blocks_kv_cache: [1, 4, 2, 'cache_in_len', 512, 2]
+        min_shape.append((1, 4, 2, 4, 512, 2))
+        opt_shape.append((1, 4, 2, 250, 512, 2))
+        max_shape.append((1, 4, 2, 1500, 512, 2))
+        input_names.append("down_blocks_kv_cache")
+        
+        # mid_blocks_kv_cache: [12, 4, 2, 'cache_in_len', 512, 2]
+        min_shape.append((12, 4, 2, 4, 512, 2))
+        opt_shape.append((12, 4, 2, 250, 512, 2))
+        max_shape.append((12, 4, 2, 1500, 512, 2))
+        input_names.append("mid_blocks_kv_cache")
+        
+        # up_blocks_kv_cache: [1, 4, 2, 'cache_in_len', 512, 2]
+        min_shape.append((1, 4, 2, 4, 512, 2))
+        opt_shape.append((1, 4, 2, 250, 512, 2))
+        max_shape.append((1, 4, 2, 1500, 512, 2))
+        input_names.append("up_blocks_kv_cache")
+        
         return {'min_shape': min_shape, 'opt_shape': opt_shape, 'max_shape': max_shape, 'input_names': input_names}
 
     def llm_job(self, text, prompt_text, llm_prompt_speech_token, llm_embedding, uuid):
