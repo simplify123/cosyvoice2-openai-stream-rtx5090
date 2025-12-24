@@ -11,3 +11,8 @@
 ### 🌐 3、OpenAI 接口标准
 完全兼容 OpenAI 接口标准，无缝对接各类 AI 应用(如AIRI数字人、Awesome Digital Human数字人、Super Agent Party数字人等)，拓展无限可能。
 
+## 构建镜像
+```bash
+docker build -f Dockerfile-devel.optimized -t cosyvoice2-openai-stream-altpano:latest .
+```
+
