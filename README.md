@@ -22,7 +22,7 @@ from modelscope import snapshot_download
 snapshot_download('iic/CosyVoice2-0.5B', local_dir='pretrained_models/CosyVoice2-0.5B')
 snapshot_download('iic/CosyVoice-ttsfrd', local_dir='pretrained_models/CosyVoice-ttsfrd')
 ```
-#### 3、torch+cuda的whl本地文件下载
+#### 3、torch+cuda的whl本地文件下载，放入根目录whl文件夹中
 torch-2.8.0+cu129-cp310-cp310-manylinux_2_28_x86_64
 torchaudio-2.8.0+cu129-cp310-cp310-manylinux_2_28_x86_64.whl
 torch_tensorrt-2.8.0+cu129-cp310-cp310-manylinux_2_28_x86_64
