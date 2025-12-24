@@ -21,7 +21,10 @@ docker build -f Dockerfile-devel.optimized -t cosyvoice2-openai-api-stream-simpl
 ```bash
 docker compose up -d
 ```
+docker-compose.yml文件里设置了三个环境变量，可以控制fp16、jit、trt的开启关闭，显存不够的情况下，建议关闭trt
 ### 💡 服务启动后，通过api进行调用
 #### API地址：http://your_ip:51870/v1  模型ID: tts-1  API密钥：dummy_key(其实是随便填的)  音色：jok(可通过音色列表查看需要的角色，添加音色的话，就是往根目录下的voice文件夹里放入音频和对应的文本文档就可以了)
 #### 音色列表：http://your_ip:51870/v1/voices
 
+## 04 已知问题
+目前经过测试，在全流式情况下，会有音爆现象，技术有限，不知道如何解决，还有vllm加速也没搞定，查了一下据说要在5090显卡上编译vllm源码，暂时没时间折腾。
