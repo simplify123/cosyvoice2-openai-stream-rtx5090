@@ -52,3 +52,70 @@ http://your_ip:51870/v1/voices
 ## 🛠️ 04 已知问题
 目前经过测试，在全流式情况下，会有音爆现象，技术有限，不知道如何解决，还有vllm加速也没搞定，据说要在5090显卡上编译vllm源码，暂时没时间折腾。
 在按照标点拆分句子，客户端流式情况下，首包延迟1.4~1.6秒，声音效果很好。在dify v1.11.1中(其他版本应该也行，没测试)可以通过Text To Speech插件进行音频文件的生成。
+
+## 运行效果
+```bash
+==========
+== CUDA ==
+==========
+CUDA Version 12.9.0
+Container image Copyright (c) 2016-2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+This container image and its contents are governed by the NVIDIA Deep Learning Container License.
+By pulling and using the container, you accept the terms and conditions of this license:
+https://developer.nvidia.com/ngc/nvidia-deep-learning-container-license
+A copy of this license is made available in this container at /NGC-DL-CONTAINER-LICENSE for your convenience.
+Loading model pretrained_models/CosyVoice2-0.5B ...
+🚀 尝试启用TensorRT加速 (首次启动会转换模型,需5-10分钟)
+✅ 开关配置: fp16=False, JIT=True, TRT=False
+/opt/conda/envs/cosyvoice/lib/python3.10/site-packages/lightning/fabric/__init__.py:41: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+/opt/conda/envs/cosyvoice/lib/python3.10/site-packages/diffusers/models/lora.py:393: FutureWarning: `LoRACompatibleLinear` is deprecated and will be removed in version 1.0.0. Use of `LoRACompatibleLinear` is deprecated. Please switch to PEFT backend by installing PEFT: `pip install peft`.
+  deprecate("LoRACompatibleLinear", "1.0.0", deprecation_message)
+2025-12-24 02:09:53,527 INFO input frame rate=25
+/opt/conda/envs/cosyvoice/lib/python3.10/site-packages/torch/nn/utils/weight_norm.py:144: FutureWarning: `torch.nn.utils.weight_norm` is deprecated in favor of `torch.nn.utils.parametrizations.weight_norm`.
+  WeightNorm.apply(module, name, dim)
+Special tokens have been added in the vocabulary, make sure the associated word embeddings are fine-tuned or trained.
+Special tokens have been added in the vocabulary, make sure the associated word embeddings are fine-tuned or trained.
+2025-12-24 02:09:55.386684287 [W:onnxruntime:, transformer_memcpy.cc:111 ApplyImpl] 8 Memcpy nodes are added to the graph main_graph for CUDAExecutionProvider. It might have negative impact on performance (including unable to run CUDA graph). Set session_options.log_severity_level=1 to see the detail logs before this message.
+2025-12-24 02:09:55.389394606 [W:onnxruntime:, session_state.cc:1316 VerifyEachNodeIsAssignedToAnEp] Some nodes were not assigned to the preferred execution providers which may or may not have an negative impact on performance. e.g. ORT explicitly assigns shape related ops to CPU to improve perf.
+2025-12-24 02:09:55.389401709 [W:onnxruntime:, session_state.cc:1318 VerifyEachNodeIsAssignedToAnEp] Rerunning with verbose output on a non-minimal build will show node assignments.
+text.cc: festival_Text_init
+open voice lang map failed
+✅ 模型已加载, fp16=False, JIT=True, TRT=False
+🔧 成功应用运行时补丁: encoder.forward 将忽略 context 参数
+Loading voice: furina
+/opt/conda/envs/cosyvoice/lib/python3.10/site-packages/torchaudio/_backend/utils.py:213: UserWarning: In 2.9, this function's implementation will be changed to use torchaudio.load_with_torchcodec` under the hood. Some parameters like ``normalize``, ``format``, ``buffer_size``, and ``backend`` will be ignored. We recommend that you port your code to rely directly on TorchCodec's decoder instead: https://docs.pytorch.org/torchcodec/stable/generated/torchcodec.decoders.AudioDecoder.html#torchcodec.decoders.AudioDecoder.
+  warnings.warn(
+Loading voice: jok
+Loading voice: ben
+Loading voice: nezha
+Loading voice: ad
+Loading voice: default
+Loading voice: yanglan
+Loading voice: jialing
+Loading voice: dyy
+Loading voice: dehua
+Loading voice: alloy
+Loading voice: luyu
+@XDF@模型: pretrained_models/CosyVoice2-0.5B 已加载
+2025-12-24 02:10:49,383 DEBUG Using selector: EpollSelector
+INFO:     Started server process [1]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:51870 (Press CTRL+C to quit)
+INFO:     100.64.0.3:6089 - "GET /v1/audio HTTP/1.1" 404 Not Found
+INFO:     100.64.0.3:6089 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     100.64.0.3:11988 - "GET /v1/audio/voice HTTP/1.1" 404 Not Found
+INFO:     100.64.0.3:11988 - "GET /v1/audio/voices HTTP/1.1" 404 Not Found
+INFO:     100.64.0.3:13891 - "GET /v1/voices HTTP/1.1" 200 OK
+
+  0%|          | 0/1 [00:00<?, ?it/s]2025-12-24 04:54:54,550 INFO synthesis text 现在是一段声音测试，经过测试，R T X五零九零显卡可以在ubuntu系统下达到实时R T F输出，整体效果不错，下一步，我们将研究整合cosyvoice三。
+/workspace/CosyVoice/cosyvoice/cli/model.py:157: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with self.llm_context, torch.cuda.amp.autocast(self.fp16):
+/workspace/CosyVoice/cosyvoice/cli/model.py:337: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(self.fp16), self.trt_context_dict[uuid]:
+2025-12-24 04:55:02,148 INFO yield speech len 15.24, rtf 0.49856089231536144
+
+100%|██████████| 1/1 [00:07<00:00,  7.61s/it]
+100%|██████████| 1/1 [00:07<00:00,  7.61s/it]
+INFO:     100.64.0.3:11862 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+```
