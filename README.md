@@ -23,7 +23,12 @@ docker compose up -d
 ```
 docker-compose.yml文件里设置了三个环境变量，可以控制fp16、jit、trt的开启关闭，显存不够的情况下，建议关闭trt
 ### 💡 服务启动后，通过api进行调用
-#### API地址：http://your_ip:51870/v1  模型ID: tts-1  API密钥：dummy_key(其实是随便填的)  音色：jok(可通过音色列表查看需要的角色，添加音色的话，就是往根目录下的voice文件夹里放入音频和对应的文本文档就可以了)
+#### API接口信息配置：
+API地址：http://your_ip:51870/v1  
+模型ID: tts-1  
+API密钥：dummy_key(其实是随便填的)  
+音色：jok(可通过音色列表查看需要的角色，添加音色的话，就是往根目录下的voice文件夹里放入音频和对应的文本文档就可以了)
+
 #### 音色列表：http://your_ip:51870/v1/voices
 
 ## 🛠️ 04 已知问题
