@@ -21,6 +21,6 @@ docker build -f Dockerfile-devel.optimized -t cosyvoice2-openai-api-stream-simpl
 docker compose up -d
 ```
 ### 💡 服务启动后，通过api进行调用
-#### api地址：http://your_ip:51870/v1  模型ID: tts-1  API密钥：dummy_key(其实是随便填的)
+#### api地址：http://your_ip:51870/v1  模型ID: tts-1  API密钥：dummy_key(其实是随便填的)  音色：jok(可通过音色列表查看需要的角色，添加音色的话，就是往根目录下的voice文件夹里放入音频和对应的文本文档就可以了)
 #### 音色列表：http://your_ip:51870/v1/voices
 
