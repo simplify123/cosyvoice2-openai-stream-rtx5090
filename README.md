@@ -13,6 +13,18 @@
 完全兼容 OpenAI 接口标准，无缝对接各类 AI 应用(如AIRI数字人、Awesome Digital Human数字人、Super Agent Party数字人等)，拓展无限可能。
 
 ## 📦 02 构建镜像
+
+#### 开始构建之前，请先完成几个内容的下载
+#### 1、third_party/Matcha-TTS
+#### 2、模型下载
+```python
+from modelscope import snapshot_download
+snapshot_download('iic/CosyVoice2-0.5B', local_dir='pretrained_models/CosyVoice2-0.5B')
+snapshot_download('iic/CosyVoice-ttsfrd', local_dir='pretrained_models/CosyVoice-ttsfrd')
+```
+#### 3、torch+cuda的whl本地文件下载
+
+#### 4、开始构建镜像
 ```bash
 docker build -f Dockerfile-devel.optimized -t cosyvoice2-openai-api-stream-simplify123:latest .
 ```
