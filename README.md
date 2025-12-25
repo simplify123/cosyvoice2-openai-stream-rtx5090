@@ -120,7 +120,7 @@ INFO:     100.64.0.3:13891 - "GET /v1/voices HTTP/1.1" 200 OK
 INFO:     100.64.0.3:11862 - "POST /v1/audio/speech HTTP/1.1" 200 OK
 ```
 
-### cosyvoice2服务器+客户端全流式测试（有音爆现象）
+### cosyvoice2服务器+客户端（服务与客户端不在同一台机器，且非局域网，通过tailscale连接情况下）全流式测试（有音爆现象）
 
 ```python
 C:\Users\Administrator\Desktop\tts-test\venv\Scripts\python.exe C:\Users\Administrator\Desktop\tts-test\3streaming_playback_openai_unbuffered.py 
@@ -166,7 +166,7 @@ C:\Users\Administrator\Desktop\tts-test\venv\Scripts\python.exe C:\Users\Adminis
 Process finished with exit code 0
 ```
 
-### cosyvoice3服务器+客户端全流式测试（无音爆现象，效果完美）
+### cosyvoice3服务器+客户端（服务与客户端不在同一台机器，且非局域网，通过tailscale连接情况下）全流式测试（无音爆现象，效果完美）
 
 ```python
 Loading voice: yanglan
